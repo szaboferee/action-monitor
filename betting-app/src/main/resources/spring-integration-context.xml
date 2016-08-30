@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:int="http://www.springframework.org/schema/integration"
+       xmlns:int-jpa="http://www.springframework.org/schema/integration/jpa"
+       xmlns:jms="http://www.springframework.org/schema/integration/jms"
+       xsi:schemaLocation="http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
+		http://www.springframework.org/schema/integration/jpa http://www.springframework.org/schema/integration/jpa/spring-integration-jpa.xsd
+        http://www.springframework.org/schema/integration/jms
+        http://www.springframework.org/schema/integration/jms/spring-integration-jms.xsd
+		http://www.springframework.org/schema/integration http://www.springframework.org/schema/integration/spring-integration.xsd
+		http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <int:channel id="createBetRequestChannel"/>
+    <int:publish-subscribe-channel id="createBetReplyChannel"/>
+    <int:publish-subscribe-channel id="updateBetReplyChannel"/>
+    <int:channel id="updateBetRequestChannel"/>
+    <int:channel id="listBetsRequestChannel"/>
+
+    <bean class="com.fasterxml.jackson.databind.ObjectMapper" id="objectMapper"/>
+    <bean class="net.szaboferee.sample.betting.monitor.BetToMonitorEventConverter" id="converter">
+        <constructor-arg name="objectMapper" ref="objectMapper"/>
+    </bean>
+
+    <int:transformer output-channel="actionMonitorChannel" input-channel="createBetReplyChannel" ref="converter" method="createBet"/>
+    <int:transformer output-channel="actionMonitorChannel" input-channel="updateBetReplyChannel" ref="converter" method="updateBet"/>
+
+    <int:channel id="actionMonitorChannel"/>
+
+    <int:gateway id="betService"
+                 service-interface="net.szaboferee.sample.betting.service.BetService"
+                 default-request-timeout="5000" default-reply-timeout="5000" error-channel="errorChannel">
+        <int:method name="createBet" request-channel="createBetRequestChannel" reply-channel="createBetReplyChannel"/>
+        <int:method name="updateBet" request-channel="updateBetRequestChannel" reply-channel="updateBetReplyChannel"/>
+        <int:method name="listBets" request-channel="listBetsRequestChannel"/>
+    </int:gateway>
+
+
+    <int-jpa:updating-outbound-gateway entity-manager-factory="entityManagerFactory"
+                                       request-channel="createBetRequestChannel"
+                                       reply-channel="createBetReplyChannel" requires-reply="true">
+        <int-jpa:transactional transaction-manager="transactionManager"/>
+    </int-jpa:updating-outbound-gateway>
+
+    <int-jpa:updating-outbound-gateway entity-manager-factory="entityManagerFactory"
+                                       request-channel="updateBetRequestChannel"
+                                       reply-channel="updateBetReplyChannel">
+        <int-jpa:transactional transaction-manager="transactionManager"/>
+    </int-jpa:updating-outbound-gateway>
+    <int-jpa:retrieving-outbound-gateway entity-manager-factory="entityManagerFactory"
+                                         request-channel="listBetsRequestChannel"
+                                         jpa-query="select bet from Bet bet order by bet.id asc">
+    </int-jpa:retrieving-outbound-gateway>
+
+
+    <bean id="connectionFactory" class="org.springframework.jms.connection.CachingConnectionFactory">
+        <property name="targetConnectionFactory">
+            <bean class="org.apache.activemq.ActiveMQConnectionFactory">
+                <property name="brokerURL" value="tcp://localhost:61616"/>
+            </bean>
+        </property>
+        <property name="sessionCacheSize" value="10"/>
+    </bean>
+
+    <bean id="actionQueue" class="org.apache.activemq.command.ActiveMQQueue">
+        <constructor-arg value="queue.action"/>
+    </bean>
+
+    <jms:outbound-channel-adapter id="jmsout" channel="actionMonitorChannel" destination="actionQueue" />
+
+</beans>

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Action Monitor</title>
+    <script src="http://localhost:8090/sockjs.js"></script>
+    <script type="text/javascript">
+
+        var sock = new SockJS('http://localhost:8090/actions');
+        sock.onopen = function () {
+            document.getElementById('info').innerHTML = 'Connecting...';
+        };
+        sock.onmessage = function (e) {
+            document.getElementById('info').innerHTML = 'Connected';
+            document.getElementById('log').innerHTML = document.getElementById('log').innerHTML +  formatData(e.data);
+        };
+        sock.onclose = function () {
+            document.getElementById('info').innerHTML = "Server closed connection or hasn't been started";
+        };
+
+        formatData = function (data) {
+            var event = JSON.parse(data);
+            var formatted = '';
+            if(event) {
+                formatted += 'timestamp=' + event.timestamp + ' a row with ID=' + event.id + ' was ' + event.event;
+            }
+            formatted += '<br/>';
+            return formatted;
+        }
+    </script>
+</head>
+
+<body style="margin: 0">
+<noscript><h2 style="color: #ff0000">Seems your browser doesn't support Javascript!
+    WebSocket relies on Javascript being enabled. Please enable Javascript and reload this page!</h2></noscript>
+<div id="info">Starting...</div><br/>
+<div id="log"></div>
+</body>
+</html>

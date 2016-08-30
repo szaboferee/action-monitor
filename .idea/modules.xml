@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/action-monitor-spring-integrations.iml" filepath="$PROJECT_DIR$/action-monitor-spring-integrations.iml" />
+      <module fileurl="file://$PROJECT_DIR$/betting-app/betting-app.iml" filepath="$PROJECT_DIR$/betting-app/betting-app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/message-queue/message-queue.iml" filepath="$PROJECT_DIR$/message-queue/message-queue.iml" />
+      <module fileurl="file://$PROJECT_DIR$/monitor-webapp/monitor-webapp.iml" filepath="$PROJECT_DIR$/monitor-webapp/monitor-webapp.iml" />
+    </modules>
+  </component>
+</project>
